@@ -112,4 +112,9 @@ zip_data |>
 
 - a. _Either_ choose one of the plots you've already made _or_ create a new plot or map using the data. Work it up to something more finished. Aim for something that is both properly informative and as polished as you can make it.
 
+```{r}
+
+```
+
+
 - b. Try saving this plot or map using `ggsave()`. Create it as a PNG or PDF file. Make its dimensions (width and height) the right size for what you draw.
