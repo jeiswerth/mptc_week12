@@ -124,7 +124,7 @@ print(comp_types, n = Inf)
 ```
 
 I've summarized by the number of each complaint type. This is informative because
-we can see what people typically care enough about that they would submit a complaint.
+we can see the big picture concerning what people typically care enough about that they would submit a complaint.
 
 ## 2 Look at each column/variable in a little more detail
 
@@ -136,10 +136,13 @@ borough_df <- nycomplaints |>
   drop_na(borough, complaint_type) |> 
   summarize(total = n()) |> 
   group_by(borough) |> 
-  slice_max(total, n = 5)
+  slice_max(total, n = 5) |> 
+  mutate(complaint_type = if_else(complaint_type == "Housing and Buildings", "Housing", complaint_type)) #Change name to housing so the plot labels are easier to read
 
 print(borough_df, n = Inf)
 ```
+
+Here I've summarized the top 5 types of complaints within each borough, to see if they have similar patterns. More to come below:
 
 ```{r}
 p <- ggplot(data = borough_df,
@@ -149,12 +152,17 @@ p <- ggplot(data = borough_df,
   geom_col() +
   facet_wrap(~borough,
              scales = "free") +
-  guides(fill = "none")
+  guides(fill = "none") +
+  labs(title = "Number of Complaints per Borough, by Type of Complaint",
+       subtitle = "New York City",
+       x = "Total Number of Complaints",
+       y = "Type of Complaint") +
+  scale_x_continuous(labels = scales::label_number(scale = 1/1000, suffix = "K")) # Change x labels so they don't overlap
 
 p          
 ```
 
-Checking the top complaints by borough to see if the distribution of complaints varies. We can see that the boroughs vary substantially, even in the most common complaint types. Despite transportation being the overall 2nd most complained about issue, the Bronx and Manhattan see very few complaints in this category. Immigration is a common complaint in Brooklyn and the Bronx, but not in any other borough. Further, sanitation is only a common complaint in Staten island.
+The above figure shows the top complaints by borough to see if the distribution of complaints varies. We can see that the boroughs vary substantially, even in the most common complaint types. Despite transportation being the overall 2nd most complained about issue, the Bronx and Manhattan see very few complaints in this category. Immigration is a common complaint in Brooklyn and the Bronx, but not in any other borough. Further, sanitation is only a common complaint in Staten island.
 
 ```{r}
 housing <- nycomplaints |> 
@@ -166,7 +174,7 @@ housing <- nycomplaints |>
 print(housing, n = 20)
 ```
 
-Here, I explore the complaints within the Housing and Buildings category, the most common complaint type. We can see the top 3 complaint types are about unaffordable housing, leasing issues, and landlord/management agent issues.
+Here, I explore the complaints within the Housing and Buildings category, the most common complaint type. We can see the top 3 complaint types are about unaffordable housing, leasing issues, and landlord/management agent issues (which is not surprising given we are looking at NYC, but it's very clear these are current issues that NYC residents face).
 
 ## 3. Make some plots or maps
 
@@ -198,7 +206,7 @@ p2 <- ggplot(data = housing_complaint_time,
 p2
 ```
 
-Here I dig a bit further into the Housing and Building type complaints, and look to see which types of cases are resolved slowly. The above plot displays the top 20 longest case types to be closed and shows that zoning complaints take significantly longer than other complaint types. 
+Here I dig a bit further into the Housing and Building type complaints, and look to see which types of cases are resolved slowly. The above plot displays the top 20 longest case types to be closed and shows that zoning complaints take significantly longer than other complaint types. It does seem that many types of complaint cases take an extremely long amount of time before they are closed. Interestingly, this does not necessarily mean the cases were resolved either - it could be that no further action was able to be taken on the case.
 
 ```{r}
 # Rename & clean for merging
@@ -225,13 +233,74 @@ zip_data_only |>
        subtitle = "New York City, 2019")
 ```
 
+The above plot shows the number of evictions complaints by zip code. We can see that the bulk of eviction complaints are in the heart of Manhattan, near central park. It seems that the boroughs outside Manhattan either don't see nearly as many evictions, or they get way less complaints. It would be interesting to use the population in each zip code to see if the number of evictions per resident is actually much higher in Manhattan as the plot suggests.
+
+```{r}
+complaint_time <- nycomplaints |> 
+  mutate(complaint_type = tolower(complaint_type),
+         complaint_type = str_squish(complaint_type)) |> 
+  group_by(borough, complaint_type) |> 
+  filter(complaint_type != "please choose an issue...") |> 
+  drop_na(borough, opendate, closedate, complaint_type, descriptor) |> 
+  mutate(as.Date(opendate, format = "%Y-%m-%d"),
+         as.Date(closedate, format = "%Y-%m-%d"),
+         ttc = difftime(closedate, opendate, units = "days"))
+
+complaint_time_summary <- complaint_time |> 
+  summarize(mean_ttc = mean(ttc)) |> 
+  slice_max(mean_ttc, n = 20)
+
+p3 <- ggplot(data = complaint_time_summary,
+             aes(x = mean_ttc,
+                 y = complaint_type,
+                 color = if_else(borough == "Queens", "Queens", "Other Boroughs"))) +
+  geom_point() +
+  labs(title = "Longest Case Completion Times by Complaint, NYC",
+       subtitle = "Housing & Building Related Cases",
+       x = "Time to Close Complaint Case",
+       y = "Complaint Description",
+       caption = "Source: City of New York") +
+  scale_color_manual(name = "Borough",
+                     values = c("Queens" = "purple", "Other Boroughs" = "grey"))
+
+p3
+```
+
+The above plot shows how long each borough takes to resolve complaints for housing & building-related cases, for the top 20 complaint types in each borough. Clearly, Queens takes much longer to close many of the complaint types compared to the other boroughs. 
+
 ## 4. Try to make one properly-polished plot or map
 
 - a. _Either_ choose one of the plots you've already made _or_ create a new plot or map using the data. Work it up to something more finished. Aim for something that is both properly informative and as polished as you can make it.
 
 ```{r}
+complaint_time_evict_summary <- complaint_time |> 
+  mutate(descriptor = tolower(descriptor),
+         descriptor = str_squish(descriptor)) |> 
+  filter(descriptor == "eviction" | descriptor == "evictions") |> 
+  group_by(zip) |> 
+  summarize(mean_ttc = mean(ttc))  |> 
+  rename(GEOID = zip)
 
+zip_data_only2 <- zip_data |> 
+  left_join(complaint_time_evict_summary, by = "GEOID")
+
+p4 <- zip_data_only2 |> 
+  ggplot(aes(fill = mean_ttc)) + 
+  geom_sf(color = NA) +
+  scale_fill_viridis_c(option = "turbo") +
+  labs(title = "Mean Number of Days to Close an Evictions Complaint Case", 
+       subtitle = "by Zip Code - New York City, 2019") +
+  labs(fill = "Mean Days to Close Case")
+
+p4
 ```
 
+The above plot shows just how long it can take to have evictions complaints cases closed, especially in Queens. Around half of the zip codes in Queens take around one year or longer to close cases.
 
 - b. Try saving this plot or map using `ggsave()`. Create it as a PNG or PDF file. Make its dimensions (width and height) the right size for what you draw.
+
+```{r}
+ggsave(filename = here("figures", "evictions_plot.pdf"), 
+       plot = p4, device = "pdf", width = 8, height = 6)
+```
+

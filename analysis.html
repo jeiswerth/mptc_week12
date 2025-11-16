@@ -552,7 +552,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 60 QUALITY OF LIFE               1</code></pre>
 </div>
 </div>
-<p>I’ve summarized by the number of each complaint type. This is informative because we can see what people typically care enough about that they would submit a complaint.</p>
+<p>I’ve summarized by the number of each complaint type. This is informative because we can see the big picture concerning what people typically care enough about that they would submit a complaint.</p>
 </section>
 <section id="look-at-each-columnvariable-in-a-little-more-detail" class="level2">
 <h2 class="anchored" data-anchor-id="look-at-each-columnvariable-in-a-little-more-detail">2 Look at each column/variable in a little more detail</h2>
@@ -565,7 +565,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(borough, complaint_type) <span class="sc">|&gt;</span> </span>
 <span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">total =</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
 <span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(borough) <span class="sc">|&gt;</span> </span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(total, <span class="at">n =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(total, <span class="at">n =</span> <span class="dv">5</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">complaint_type =</span> <span class="fu">if_else</span>(complaint_type <span class="sc">==</span> <span class="st">"Housing and Buildings"</span>, <span class="st">"Housing"</span>, complaint_type)) <span class="co">#Change name to housing so the plot labels are easier to read</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>`summarise()` has grouped output by 'complaint_type'. You can override using
 the `.groups` argument.</code></pre>
@@ -574,35 +575,36 @@ the `.groups` argument.</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 25 × 3
 # Groups:   borough [5]
-   complaint_type        borough       total
-   &lt;chr&gt;                 &lt;chr&gt;         &lt;int&gt;
- 1 Housing and Buildings Bronx          8030
- 2 Finance               Bronx          3361
- 3 Immigration           Bronx          2673
- 4 General Welfare       Bronx          2127
- 5 Transportation        Bronx          1017
- 6 Housing and Buildings Brooklyn      15144
- 7 Finance               Brooklyn       9077
- 8 Transportation        Brooklyn       8293
- 9 General Welfare       Brooklyn       6783
-10 Immigration           Brooklyn       6695
-11 Housing and Buildings Manhattan     36063
-12 General Welfare       Manhattan      6392
-13 Transportation        Manhattan      6260
-14 Finance               Manhattan      3779
-15 Quality of Life       Manhattan      2825
-16 Transportation        Queens         8940
-17 Housing and Buildings Queens         8524
-18 Finance               Queens         3875
-19 General Welfare       Queens         3100
-20 Public Safety         Queens         3040
-21 Transportation        Staten Island 11734
-22 Sanitation            Staten Island  5513
-23 Finance               Staten Island  4715
-24 Environment           Staten Island  2234
-25 Housing and Buildings Staten Island  2171</code></pre>
+   complaint_type  borough       total
+   &lt;chr&gt;           &lt;chr&gt;         &lt;int&gt;
+ 1 Housing         Bronx          8030
+ 2 Finance         Bronx          3361
+ 3 Immigration     Bronx          2673
+ 4 General Welfare Bronx          2127
+ 5 Transportation  Bronx          1017
+ 6 Housing         Brooklyn      15144
+ 7 Finance         Brooklyn       9077
+ 8 Transportation  Brooklyn       8293
+ 9 General Welfare Brooklyn       6783
+10 Immigration     Brooklyn       6695
+11 Housing         Manhattan     36063
+12 General Welfare Manhattan      6392
+13 Transportation  Manhattan      6260
+14 Finance         Manhattan      3779
+15 Quality of Life Manhattan      2825
+16 Transportation  Queens         8940
+17 Housing         Queens         8524
+18 Finance         Queens         3875
+19 General Welfare Queens         3100
+20 Public Safety   Queens         3040
+21 Transportation  Staten Island 11734
+22 Sanitation      Staten Island  5513
+23 Finance         Staten Island  4715
+24 Environment     Staten Island  2234
+25 Housing         Staten Island  2171</code></pre>
 </div>
 </div>
+<p>Here I’ve summarized the top 5 types of complaints within each borough, to see if they have similar patterns. More to come below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data =</span> borough_df,</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x =</span> total,</span>
@@ -611,9 +613,14 @@ the `.groups` argument.</code></pre>
 <span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
 <span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>borough,</span>
 <span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>             <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill =</span> <span class="st">"none"</span>)</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>p          </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Number of Complaints per Borough, by Type of Complaint"</span>,</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"New York City"</span>,</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Total Number of Complaints"</span>,</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Type of Complaint"</span>) <span class="sc">+</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span><span class="fu">label_number</span>(<span class="at">scale =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">1000</span>, <span class="at">suffix =</span> <span class="st">"K"</span>)) <span class="co"># Change x labels so they don't overlap</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>p          </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -622,7 +629,7 @@ the `.groups` argument.</code></pre>
 </div>
 </div>
 </div>
-<p>Checking the top complaints by borough to see if the distribution of complaints varies. We can see that the boroughs vary substantially, even in the most common complaint types. Despite transportation being the overall 2nd most complained about issue, the Bronx and Manhattan see very few complaints in this category. Immigration is a common complaint in Brooklyn and the Bronx, but not in any other borough. Further, sanitation is only a common complaint in Staten island.</p>
+<p>The above figure shows the top complaints by borough to see if the distribution of complaints varies. We can see that the boroughs vary substantially, even in the most common complaint types. Despite transportation being the overall 2nd most complained about issue, the Bronx and Manhattan see very few complaints in this category. Immigration is a common complaint in Brooklyn and the Bronx, but not in any other borough. Further, sanitation is only a common complaint in Staten island.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>housing <span class="ot">&lt;-</span> nycomplaints <span class="sc">|&gt;</span> </span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(complaint_type <span class="sc">==</span> <span class="st">"Housing and Buildings"</span>) <span class="sc">|&gt;</span> </span>
@@ -658,7 +665,7 @@ the `.groups` argument.</code></pre>
 # ℹ 154 more rows</code></pre>
 </div>
 </div>
-<p>Here, I explore the complaints within the Housing and Buildings category, the most common complaint type. We can see the top 3 complaint types are about unaffordable housing, leasing issues, and landlord/management agent issues.</p>
+<p>Here, I explore the complaints within the Housing and Buildings category, the most common complaint type. We can see the top 3 complaint types are about unaffordable housing, leasing issues, and landlord/management agent issues (which is not surprising given we are looking at NYC, but it’s very clear these are current issues that NYC residents face).</p>
 </section>
 <section id="make-some-plots-or-maps" class="level2">
 <h2 class="anchored" data-anchor-id="make-some-plots-or-maps">3. Make some plots or maps</h2>
@@ -701,7 +708,7 @@ Defaulting to continuous.</code></pre>
 </div>
 </div>
 </div>
-<p>Here I dig a bit further into the Housing and Building type complaints, and look to see which types of cases are resolved slowly. The above plot displays the top 20 longest case types to be closed and shows that zoning complaints take significantly longer than other complaint types.</p>
+<p>Here I dig a bit further into the Housing and Building type complaints, and look to see which types of cases are resolved slowly. The above plot displays the top 20 longest case types to be closed and shows that zoning complaints take significantly longer than other complaint types. It does seem that many types of complaint cases take an extremely long amount of time before they are closed. Interestingly, this does not necessarily mean the cases were resolved either - it could be that no further action was able to be taken on the case.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Rename &amp; clean for merging</span></span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>nycomplaints_zip <span class="ot">&lt;-</span> nycomplaints <span class="sc">|&gt;</span> </span>
@@ -732,6 +739,52 @@ Defaulting to continuous.</code></pre>
 </div>
 </div>
 </div>
+<p>The above plot shows the number of evictions complaints by zip code. We can see that the bulk of eviction complaints are in the heart of Manhattan, near central park. It seems that the boroughs outside Manhattan either don’t see nearly as many evictions, or they get way less complaints. It would be interesting to use the population in each zip code to see if the number of evictions per resident is actually much higher in Manhattan as the plot suggests.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>complaint_time <span class="ot">&lt;-</span> nycomplaints <span class="sc">|&gt;</span> </span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">complaint_type =</span> <span class="fu">tolower</span>(complaint_type),</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">complaint_type =</span> <span class="fu">str_squish</span>(complaint_type)) <span class="sc">|&gt;</span> </span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(borough, complaint_type) <span class="sc">|&gt;</span> </span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(complaint_type <span class="sc">!=</span> <span class="st">"please choose an issue..."</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(borough, opendate, closedate, complaint_type, descriptor) <span class="sc">|&gt;</span> </span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">as.Date</span>(opendate, <span class="at">format =</span> <span class="st">"%Y-%m-%d"</span>),</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>         <span class="fu">as.Date</span>(closedate, <span class="at">format =</span> <span class="st">"%Y-%m-%d"</span>),</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">ttc =</span> <span class="fu">difftime</span>(closedate, opendate, <span class="at">units =</span> <span class="st">"days"</span>))</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>complaint_time_summary <span class="ot">&lt;-</span> complaint_time <span class="sc">|&gt;</span> </span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">mean_ttc =</span> <span class="fu">mean</span>(ttc)) <span class="sc">|&gt;</span> </span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(mean_ttc, <span class="at">n =</span> <span class="dv">20</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'borough'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>p3 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data =</span> complaint_time_summary,</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>             <span class="fu">aes</span>(<span class="at">x =</span> mean_ttc,</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">y =</span> complaint_type,</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>                 <span class="at">color =</span> <span class="fu">if_else</span>(borough <span class="sc">==</span> <span class="st">"Queens"</span>, <span class="st">"Queens"</span>, <span class="st">"Other Boroughs"</span>))) <span class="sc">+</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Longest Case Completion Times by Complaint, NYC"</span>,</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"Housing &amp; Building Related Cases"</span>,</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Time to Close Complaint Case"</span>,</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Complaint Description"</span>,</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">caption =</span> <span class="st">"Source: City of New York"</span>) <span class="sc">+</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">name =</span> <span class="st">"Borough"</span>,</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>                     <span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Queens"</span> <span class="ot">=</span> <span class="st">"purple"</span>, <span class="st">"Other Boroughs"</span> <span class="ot">=</span> <span class="st">"grey"</span>))</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>p3</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Don't know how to automatically pick scale for object of type &lt;difftime&gt;.
+Defaulting to continuous.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The above plot shows how long each borough takes to resolve complaints for housing &amp; building-related cases, for the top 20 complaint types in each borough. Clearly, Queens takes much longer to close many of the complaint types compared to the other boroughs.</p>
 </section>
 <section id="try-to-make-one-properly-polished-plot-or-map" class="level2">
 <h2 class="anchored" data-anchor-id="try-to-make-one-properly-polished-plot-or-map">4. Try to make one properly-polished plot or map</h2>
@@ -740,11 +793,45 @@ Defaulting to continuous.</code></pre>
 <li><em>Either</em> choose one of the plots you’ve already made <em>or</em> create a new plot or map using the data. Work it up to something more finished. Aim for something that is both properly informative and as polished as you can make it.</li>
 </ol></li>
 </ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>complaint_time_evict_summary <span class="ot">&lt;-</span> complaint_time <span class="sc">|&gt;</span> </span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">descriptor =</span> <span class="fu">tolower</span>(descriptor),</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">descriptor =</span> <span class="fu">str_squish</span>(descriptor)) <span class="sc">|&gt;</span> </span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(descriptor <span class="sc">==</span> <span class="st">"eviction"</span> <span class="sc">|</span> descriptor <span class="sc">==</span> <span class="st">"evictions"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(zip) <span class="sc">|&gt;</span> </span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">mean_ttc =</span> <span class="fu">mean</span>(ttc))  <span class="sc">|&gt;</span> </span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">GEOID =</span> zip)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>zip_data_only2 <span class="ot">&lt;-</span> zip_data <span class="sc">|&gt;</span> </span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(complaint_time_evict_summary, <span class="at">by =</span> <span class="st">"GEOID"</span>)</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>p4 <span class="ot">&lt;-</span> zip_data_only2 <span class="sc">|&gt;</span> </span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">fill =</span> mean_ttc)) <span class="sc">+</span> </span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">"turbo"</span>) <span class="sc">+</span></span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Mean Number of Days to Close an Evictions Complaint Case"</span>, </span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"by Zip Code - New York City, 2019"</span>) <span class="sc">+</span></span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">fill =</span> <span class="st">"Mean Days to Close Case"</span>)</span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>p4</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The above plot shows just how long it can take to have evictions complaints cases closed, especially in Queens. Around half of the zip codes in Queens take around one year or longer to close cases.</p>
 <ul>
 <li><ol start="2" type="a">
 <li>Try saving this plot or map using <code>ggsave()</code>. Create it as a PNG or PDF file. Make its dimensions (width and height) the right size for what you draw.</li>
 </ol></li>
 </ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="at">filename =</span> <span class="fu">here</span>(<span class="st">"figures"</span>, <span class="st">"evictions_plot.pdf"</span>), </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">plot =</span> p4, <span class="at">device =</span> <span class="st">"pdf"</span>, <span class="at">width =</span> <span class="dv">8</span>, <span class="at">height =</span> <span class="dv">6</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 </section>
 
