@@ -78,8 +78,9 @@ acs_vars <- load_variables(year = 2019, dataset = "acs5")
 ```
 
 ```{r}
+# Total population in occupied units by renters
 zip_data <- get_acs(geography = "zcta", 
-                         variables = "B28011_002",
+                         variables = "B25008_003",
                          state = "NY",
                          year = 2019,
                          geometry = TRUE)
@@ -87,6 +88,13 @@ zip_data <- get_acs(geography = "zcta",
 # Keep zip codes in NYC only
 zip_data <- zip_data |> 
   filter(GEOID %in% nyc_zips$zip)
+
+zip_data |> 
+  ggplot(aes(fill = estimate)) + 
+  geom_sf(color = NA) +
+  scale_fill_viridis_c(option = "turbo") +
+  labs(title = "Total Population in Occupied Units by Renters",
+       subtitle = "New York City, 2019")
 ```
 
 ## Other information
@@ -110,19 +118,112 @@ zip_data |>
 # Organize by the most common complaint types
 comp_types <- nycomplaints |> 
   group_by(complaint_type) |> 
-  summarize(N = n())
-print(comp_types)
+  summarize(total = n()) |> 
+  arrange(desc(total))
+print(comp_types, n = Inf)
 ```
 
+I've summarized by the number of each complaint type. This is informative because
+we can see what people typically care enough about that they would submit a complaint.
 
 ## 2 Look at each column/variable in a little more detail
 
 - Explore the basic structure of the data, by e.g. writing code to summarize the variables or investigate aspects of them that seem interesting. You can also create some initial rough exploratory plots if you like, in addition to tables or other summaries. As you go, explain here what it is you are doing and why.
 
+```{r}
+borough_df <- nycomplaints |> 
+  group_by(complaint_type, borough) |> 
+  drop_na(borough, complaint_type) |> 
+  summarize(total = n()) |> 
+  group_by(borough) |> 
+  slice_max(total, n = 5)
+
+print(borough_df, n = Inf)
+```
+
+```{r}
+p <- ggplot(data = borough_df,
+            aes(x = total,
+                y = reorder(as.factor(complaint_type), total),
+                fill = complaint_type)) +
+  geom_col() +
+  facet_wrap(~borough,
+             scales = "free") +
+  guides(fill = "none")
+
+p          
+```
+
+Checking the top complaints by borough to see if the distribution of complaints varies. We can see that the boroughs vary substantially, even in the most common complaint types. Despite transportation being the overall 2nd most complained about issue, the Bronx and Manhattan see very few complaints in this category. Immigration is a common complaint in Brooklyn and the Bronx, but not in any other borough. Further, sanitation is only a common complaint in Staten island.
+
+```{r}
+housing <- nycomplaints |> 
+  filter(complaint_type == "Housing and Buildings") |> 
+  group_by(descriptor) |> 
+  summarize(total = n()) |> 
+  arrange(desc(total))
+
+print(housing, n = 20)
+```
+
+Here, I explore the complaints within the Housing and Buildings category, the most common complaint type. We can see the top 3 complaint types are about unaffordable housing, leasing issues, and landlord/management agent issues.
+
 ## 3. Make some plots or maps
 
 - Following on from the tabular summarize, make some plots that you think show something interesting about the data. Make sure they look presentable and effective to you. Make a note about why you're doing each one. If you like, merge in data from elsewhere (e.g. from Census variables).
 
+```{r}
+housing_complaint_time <- nycomplaints |> 
+  filter(complaint_type == "Housing and Buildings") |> 
+  mutate(descriptor = tolower(descriptor),
+         descriptor = str_squish(descriptor)) |> 
+  group_by(descriptor) |> 
+  drop_na(descriptor, opendate, closedate) |> 
+  mutate(as.Date(opendate, format = "%Y-%m-%d"),
+         as.Date(closedate, format = "%Y-%m-%d"),
+         ttc = difftime(closedate, opendate, units = "days")) |> 
+  summarize(mean_ttc = mean(ttc)) |> 
+  slice_max(mean_ttc, n = 20)
+
+p2 <- ggplot(data = housing_complaint_time,
+             aes(x = mean_ttc,
+                 y = descriptor)) +
+  geom_point() +
+  labs(title = "Longest Case Completion Times by Complaint, NYC",
+       subtitle = "Housing & Building Related Cases",
+       x = "Time to Close Complaint Case",
+       y = "Complaint Description",
+       caption = "Source: City of New York")
+
+p2
+```
+
+Here I dig a bit further into the Housing and Building type complaints, and look to see which types of cases are resolved slowly. The above plot displays the top 20 longest case types to be closed and shows that zoning complaints take significantly longer than other complaint types. 
+
+```{r}
+# Rename & clean for merging
+nycomplaints_zip <- nycomplaints |> 
+  filter(zip %in% nyc_zips$zip) |> 
+  rename(GEOID = zip) |> 
+  mutate(descriptor = tolower(descriptor),
+         descriptor = str_squish(descriptor)) |> 
+  filter(descriptor == "eviction" | descriptor == "evictions")
+```
+
+```{r}
+zip_data_only <- zip_data |> 
+  left_join(nycomplaints_zip, by = "GEOID") |> 
+  select(GEOID, geometry) |> 
+  group_by(GEOID) |> 
+  summarize(total = n())
+
+zip_data_only |> 
+  ggplot(aes(fill = total)) + 
+  geom_sf(color = NA) +
+  scale_fill_viridis_c(option = "turbo") +
+  labs(title = "Total Number of Eviction Complaints by Zip Code",
+       subtitle = "New York City, 2019")
+```
 
 ## 4. Try to make one properly-polished plot or map
 

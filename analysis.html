@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Jerry Eiswerth">
+<meta name="dcterms.date" content="2025-11-16">
+
+<title>Problem Set 12: NYC Complaints Data</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="analysis_files/libs/clipboard/clipboard.min.js"></script>
+<script src="analysis_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="analysis_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="analysis_files/libs/quarto-html/popper.min.js"></script>
+<script src="analysis_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="analysis_files/libs/quarto-html/anchor.min.js"></script>
+<link href="analysis_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="analysis_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="analysis_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="analysis_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="analysis_files/libs/bootstrap/bootstrap-81267100e462c21b3d6c0d5bf76a3417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Problem Set 12: NYC Complaints Data</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Jerry Eiswerth </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 16, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(socviz)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="do">## Mapping</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="do">## Census</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="do">## Make sure you have a census API key! You only need one.</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="do">## https://api.census.gov/data/key_signup.html</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidycensus)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">tigris_use_cache =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="do">## Install the data package:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="do">## remotes::install_github("kjhealy/nycomplaints")</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(nycomplaints)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="the-dataset" class="level1">
+<h1>The dataset</h1>
+<p>The dataset is documented <a href="https://kjhealy.github.io/nycomplaints/">on its website</a>. The source data is from <a href="https://data.cityofnewyork.us/City-Government/NYC-Council-Constituent-Services/b9km-gdpy/about_data">NYC Open Data</a>.</p>
+<p>Read the documentation before working with the data.</p>
+</section>
+<section id="explore-the-data" class="level1">
+<h1>Explore the data</h1>
+<section id="the-complaints-data" class="level2">
+<h2 class="anchored" data-anchor-id="the-complaints-data">The complaints data:</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>nycomplaints</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 341,299 × 11
+   unique_key   account opendate   closedate  complaint_type    descriptor zip  
+   &lt;chr&gt;        &lt;chr&gt;   &lt;date&gt;     &lt;date&gt;     &lt;chr&gt;             &lt;chr&gt;      &lt;chr&gt;
+ 1 NYCC34519748 NYCC34  2025-01-09 NA         Governmental Ope… Voting In… 11385
+ 2 NYCC34519746 NYCC34  2025-01-09 2025-01-09 Utilities         Con Edison 11237
+ 3 NYCC34519742 NYCC34  2025-01-08 2025-01-08 Housing and Buil… Heat/Hot … 11249
+ 4 NYCC34519741 NYCC34  2025-01-06 2025-01-08 Housing and Buil… Heat/Hot … 11211
+ 5 NYCC34519743 NYCC34  2024-12-23 2025-01-09 Housing and Buil… Maintenan… 11211
+ 6 NYCC34519744 NYCC34  2024-12-11 2025-01-09 General Welfare   SSI and S… 11211
+ 7 NYCC34519745 NYCC34  2024-09-05 2025-01-09 Finance           Tax Prepa… 11385
+ 8 NYCC31505454 NYCC31  2024-06-04 NA         Sanitation        OVERGROWN… &lt;NA&gt; 
+ 9 NYCC31505447 NYCC31  2024-05-30 NA         &lt;NA&gt;              &lt;NA&gt;       11413
+10 NYCC31505450 NYCC31  2024-05-30 NA         &lt;NA&gt;              &lt;NA&gt;       11413
+# ℹ 341,289 more rows
+# ℹ 4 more variables: borough &lt;chr&gt;, city &lt;chr&gt;, council_dist &lt;chr&gt;,
+#   community_board &lt;chr&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="two-useful-tables" class="level2">
+<h2 class="anchored" data-anchor-id="two-useful-tables">Two useful tables</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>nyc_zips</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 211 × 6
+     zip borough       city          county          long_county    short_county
+   &lt;dbl&gt; &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;           &lt;chr&gt;          &lt;chr&gt;       
+ 1 11368 Queens        Corona        Queens County   Queens County… Queens      
+ 2 11208 Brooklyn      Brooklyn      Kings County    Kings County,… Kings       
+ 3 11385 Queens        Ridgewood     Queens County   Queens County… Queens      
+ 4 11373 Queens        Elmhurst      Queens County   Queens County… Queens      
+ 5 11226 Brooklyn      Brooklyn      Kings County    Kings County,… Kings       
+ 6 11236 Brooklyn      Brooklyn      Kings County    Kings County,… Kings       
+ 7 10467 Bronx         Bronx         Bronx County    Bronx County,… Bronx       
+ 8 10025 Manhattan     New York      New York County New York Coun… New York    
+ 9 11207 Brooklyn      Brooklyn      Kings County    Kings County,… Kings       
+10 10314 Staten Island Staten Island Richmond County Richmond Coun… Richmond    
+# ℹ 201 more rows</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>census_vars</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 9 × 2
+  variable   varname          
+  &lt;chr&gt;      &lt;chr&gt;            
+1 B01001_001 population       
+2 B02001_002 white_alone      
+3 B02001_003 black_alone      
+4 B02001_005 asian_alone      
+5 B02001_008 two_or_more_races
+6 B03003_001 hispanic         
+7 B03002_003 nonhispanic_white
+8 B03002_004 nonhispanic_black
+9 B19013_001 med_hhinc        </code></pre>
+</div>
+</div>
+</section>
+<section id="create-a-zipcode-level-base-map" class="level2">
+<h2 class="anchored" data-anchor-id="create-a-zipcode-level-base-map">1. Create a zipcode-level base map</h2>
+<p>The <code>nyzip_demog</code> table has demographic data for New York City by zip code, but it does not have map data (i.e.&nbsp;the polygon geometry). Use <code>get_acs()</code> from the <code>tidycensus</code> package to get the spatial data by ZCTA.</p>
+<p>Hints:</p>
+<ul>
+<li>You should specify a year. Choose 2019.</li>
+<li>The zip code tabulation area (“zcta”) geography is what you want.</li>
+<li>You only want data for New York State (NY).</li>
+<li>You have to ask the Census API for data for some variable by the geography you want. You can use any variable you want, or more than one. Some sample ones are given in <code>acs_vars</code>.</li>
+<li>If you get more than one variable, consider reshaping/pivoting the data to put those variables in columns. If you pivot the data you may find that you have to convert it to a tibble first and that while the result still has <code>geometry</code> column it is not recognized as an <code>sf</code> object. Look at <code>sf::st_as_sf()</code> to convert it back.</li>
+<li>If you get data for New York State, you will get all the zip codes in the state. You only want data for the zip codes that are in NYC. But you know what those are.</li>
+</ul>
+<p>Additionally, this may be a good time to think about dividing your project up in to more than one file. For example, you could have one R script that does the work above to produce an object you could save, or that you source into this file. (See <code>?source</code>.)</p>
+</section>
+<section id="additional-variables" class="level2">
+<h2 class="anchored" data-anchor-id="additional-variables">Additional variables</h2>
+<p>The ACS has a lot of data. Consider the <em>very</em> long list of variables here:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">## Table of all 2019 ACS variables:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>acs_vars <span class="ot">&lt;-</span> <span class="fu">load_variables</span>(<span class="at">year =</span> <span class="dv">2019</span>, <span class="at">dataset =</span> <span class="st">"acs5"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Total population in occupied units by renters</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>zip_data <span class="ot">&lt;-</span> <span class="fu">get_acs</span>(<span class="at">geography =</span> <span class="st">"zcta"</span>, </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>                         <span class="at">variables =</span> <span class="st">"B25008_003"</span>,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                         <span class="at">state =</span> <span class="st">"NY"</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                         <span class="at">year =</span> <span class="dv">2019</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                         <span class="at">geometry =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Getting data from the 2015-2019 5-year ACS</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep zip codes in NYC only</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>zip_data <span class="ot">&lt;-</span> zip_data <span class="sc">|&gt;</span> </span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(GEOID <span class="sc">%in%</span> nyc_zips<span class="sc">$</span>zip)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>zip_data <span class="sc">|&gt;</span> </span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">fill =</span> estimate)) <span class="sc">+</span> </span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">"turbo"</span>) <span class="sc">+</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Total Population in Occupied Units by Renters"</span>,</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"New York City, 2019"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="other-information" class="level2">
+<h2 class="anchored" data-anchor-id="other-information">Other information</h2>
+<p><em>Hint:</em> You can use <code>st_drop_geometry()</code> to change a spatial table into a simple tibble:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="do">## See how the `geometry` column disappears</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>zip_data <span class="sc">|&gt;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    GEOID        NAME   variable estimate  moe
+1   11219 ZCTA5 11219 B25008_003    64491 2863
+2   10021 ZCTA5 10021 B25008_003    23676 2227
+3   10044 ZCTA5 10044 B25008_003     8559  897
+4   11213 ZCTA5 11213 B25008_003    52140 2052
+5   11424 ZCTA5 11424 B25008_003        0   12
+6   10005 ZCTA5 10005 B25008_003     6703  856
+7   10311 ZCTA5 10311 B25008_003        0   12
+8   10280 ZCTA5 10280 B25008_003     6631  811
+9   11365 ZCTA5 11365 B25008_003    21627 1581
+10  11205 ZCTA5 11205 B25008_003    32545 1615
+11  10170 ZCTA5 10170 B25008_003        0   12
+12  11429 ZCTA5 11429 B25008_003     6436 1003
+13  10003 ZCTA5 10003 B25008_003    28183 1319
+14  11451 ZCTA5 11451 B25008_003        0   12
+15  11358 ZCTA5 11358 B25008_003    14847 1063
+16  11359 ZCTA5 11359 B25008_003        0   12
+17  10453 ZCTA5 10453 B25008_003    76578 1996
+18  10016 ZCTA5 10016 B25008_003    36270 2507
+19  11378 ZCTA5 11378 B25008_003    17968 1178
+20  10279 ZCTA5 10279 B25008_003       42   66
+21  11418 ZCTA5 11418 B25008_003    20800 1614
+22  10167 ZCTA5 10167 B25008_003        0   12
+23  10153 ZCTA5 10153 B25008_003        0   12
+24  11204 ZCTA5 11204 B25008_003    45252 1987
+25  10308 ZCTA5 10308 B25008_003     4273  987
+26  10007 ZCTA5 10007 B25008_003     3635  656
+27  11421 ZCTA5 11421 B25008_003    18245 1416
+28  10177 ZCTA5 10177 B25008_003        0   12
+29  10111 ZCTA5 10111 B25008_003        0   12
+30  10152 ZCTA5 10152 B25008_003        0   12
+31  10017 ZCTA5 10017 B25008_003     8740 1031
+32  10012 ZCTA5 10012 B25008_003    17280 1163
+33  11233 ZCTA5 11233 B25008_003    56075 2196
+34  11239 ZCTA5 11239 B25008_003    12362  884
+35  10006 ZCTA5 10006 B25008_003     2410  382
+36  10457 ZCTA5 10457 B25008_003    66481 2074
+37  10459 ZCTA5 10459 B25008_003    41570 1423
+38  10110 ZCTA5 10110 B25008_003        0   12
+39  11379 ZCTA5 11379 B25008_003    13525 1060
+40  10165 ZCTA5 10165 B25008_003        0   12
+41  10271 ZCTA5 10271 B25008_003        0   12
+42  10069 ZCTA5 10069 B25008_003     4329  730
+43  10162 ZCTA5 10162 B25008_003     1486  517
+44  10171 ZCTA5 10171 B25008_003        0   12
+45  10169 ZCTA5 10169 B25008_003        0   12
+46  10168 ZCTA5 10168 B25008_003        0   12
+47  11221 ZCTA5 11221 B25008_003    59669 2341
+48  10023 ZCTA5 10023 B25008_003    35851 2202
+49  11102 ZCTA5 11102 B25008_003    24738 1194
+50  11426 ZCTA5 11426 B25008_003     4901 1057
+51  11109 ZCTA5 11109 B25008_003     5344  889
+52  11217 ZCTA5 11217 B25008_003    27172 1456
+53  11225 ZCTA5 11225 B25008_003    46068 1916
+54  11226 ZCTA5 11226 B25008_003    84033 2434
+55  11363 ZCTA5 11363 B25008_003     1656  363
+56  11373 ZCTA5 11373 B25008_003    65112 2565
+57  11411 ZCTA5 11411 B25008_003     2597  512
+58  11416 ZCTA5 11416 B25008_003    13903  924
+59  11435 ZCTA5 11435 B25008_003    34542 1945
+60  10112 ZCTA5 10112 B25008_003        0   12
+61  10456 ZCTA5 10456 B25008_003    84636 2387
+62  10020 ZCTA5 10020 B25008_003        0   12
+63  10154 ZCTA5 10154 B25008_003        0   12
+64  11104 ZCTA5 11104 B25008_003    19675 1079
+65  11372 ZCTA5 11372 B25008_003    44317 2112
+66  10278 ZCTA5 10278 B25008_003        0   12
+67  11230 ZCTA5 11230 B25008_003    55260 2009
+68  10029 ZCTA5 10029 B25008_003    68532 2188
+69  10075 ZCTA5 10075 B25008_003    12040 2057
+70  10172 ZCTA5 10172 B25008_003        0   12
+71  10474 ZCTA5 10474 B25008_003    10120  720
+72  11413 ZCTA5 11413 B25008_003    11232 1051
+73  10199 ZCTA5 10199 B25008_003        0   12
+74  10115 ZCTA5 10115 B25008_003        0   12
+75  10303 ZCTA5 10303 B25008_003    10005 1486
+76  10009 ZCTA5 10009 B25008_003    53957 1900
+77  10032 ZCTA5 10032 B25008_003    57573 2698
+78  10103 ZCTA5 10103 B25008_003        0   12
+79  10025 ZCTA5 10025 B25008_003    62165 3039
+80  10309 ZCTA5 10309 B25008_003     3398  919
+81  10470 ZCTA5 10470 B25008_003     8705  816
+82  10472 ZCTA5 10472 B25008_003    55581 2014
+83  10468 ZCTA5 10468 B25008_003    71700 2177
+84  11366 ZCTA5 11366 B25008_003     4731  776
+85  10033 ZCTA5 10033 B25008_003    52616 2184
+86  10454 ZCTA5 10454 B25008_003    33224 1640
+87  11354 ZCTA5 11354 B25008_003    31471 1921
+88  10019 ZCTA5 10019 B25008_003    35593 1862
+89  10467 ZCTA5 10467 B25008_003    83426 2745
+90  11216 ZCTA5 11216 B25008_003    41024 1567
+91  10036 ZCTA5 10036 B25008_003    25205 1435
+92  10040 ZCTA5 10040 B25008_003    40101 2005
+93  10173 ZCTA5 10173 B25008_003        0   12
+94  10451 ZCTA5 10451 B25008_003    43105 2028
+95  11369 ZCTA5 11369 B25008_003    13239 1104
+96  11101 ZCTA5 11101 B25008_003    25225 1665
+97  10469 ZCTA5 10469 B25008_003    30900 1883
+98  10002 ZCTA5 10002 B25008_003    63306 1976
+99  11436 ZCTA5 11436 B25008_003     5163  661
+100 10466 ZCTA5 10466 B25008_003    41021 2187
+101 10010 ZCTA5 10010 B25008_003    22801 1936
+102 11220 ZCTA5 11220 B25008_003    68830 2602
+103 10039 ZCTA5 10039 B25008_003    23980 1650
+104 11417 ZCTA5 11417 B25008_003    11364 1125
+105 11203 ZCTA5 11203 B25008_003    40985 1589
+106 11218 ZCTA5 11218 B25008_003    43160 1882
+107 11207 ZCTA5 11207 B25008_003    59987 2359
+108 10314 ZCTA5 10314 B25008_003    18254 1551
+109 10458 ZCTA5 10458 B25008_003    78742 2189
+110 10022 ZCTA5 10022 B25008_003    14959 1311
+111 10024 ZCTA5 10024 B25008_003    30533 1852
+112 11370 ZCTA5 11370 B25008_003    10812 1126
+113 11430 ZCTA5 11430 B25008_003        0   12
+114 10455 ZCTA5 10455 B25008_003    37305 1712
+115 10119 ZCTA5 10119 B25008_003        0   12
+116 10031 ZCTA5 10031 B25008_003    51268 2717
+117 11415 ZCTA5 11415 B25008_003    11306 1057
+118 11375 ZCTA5 11375 B25008_003    34488 1525
+119 10037 ZCTA5 10037 B25008_003    18903 1214
+120 10174 ZCTA5 10174 B25008_003        0   12
+121 10011 ZCTA5 10011 B25008_003    28037 1598
+122 11106 ZCTA5 11106 B25008_003    29534 1232
+123 11223 ZCTA5 11223 B25008_003    48017 2135
+124 10065 ZCTA5 10065 B25008_003    18394 1549
+125 10463 ZCTA5 10463 B25008_003    48002 2157
+126 10030 ZCTA5 10030 B25008_003    26571 1639
+127 11367 ZCTA5 11367 B25008_003    21540 1858
+128 11692 ZCTA5 11692 B25008_003    12962 1145
+129 10038 ZCTA5 10038 B25008_003    16245  699
+130 10475 ZCTA5 10475 B25008_003    22334 2736
+131 11229 ZCTA5 11229 B25008_003    40217 1778
+132 11422 ZCTA5 11422 B25008_003     9852 1207
+133 10035 ZCTA5 10035 B25008_003    30375 1706
+134 10018 ZCTA5 10018 B25008_003     7680  644
+135 11208 ZCTA5 11208 B25008_003    70067 2216
+136 10473 ZCTA5 10473 B25008_003    40740 1835
+137 10027 ZCTA5 10027 B25008_003    49847 1843
+138 11691 ZCTA5 11691 B25008_003    46734 2969
+139 11355 ZCTA5 11355 B25008_003    53925 2401
+140 10471 ZCTA5 10471 B25008_003     9247  841
+141 11234 ZCTA5 11234 B25008_003    28143 1995
+142 11361 ZCTA5 11361 B25008_003    11031  921
+143 11004 ZCTA5 11004 B25008_003     3207  735
+144 10013 ZCTA5 10013 B25008_003    18823 1280
+145 11215 ZCTA5 11215 B25008_003    36882 1587
+146 10461 ZCTA5 10461 B25008_003    29298 1666
+147 10306 ZCTA5 10306 B25008_003    13646 1404
+148 10301 ZCTA5 10301 B25008_003    17607 1533
+149 10302 ZCTA5 10302 B25008_003     7387  978
+150 10304 ZCTA5 10304 B25008_003    17786 1649
+151 10307 ZCTA5 10307 B25008_003     2419  504
+152 10312 ZCTA5 10312 B25008_003     6571 1056
+153 11211 ZCTA5 11211 B25008_003    84646 2719
+154 11231 ZCTA5 11231 B25008_003    23781 1155
+155 11005 ZCTA5 11005 B25008_003       90   75
+156 11103 ZCTA5 11103 B25008_003    29505 1198
+157 11201 ZCTA5 11201 B25008_003    36669 1510
+158 11209 ZCTA5 11209 B25008_003    39184 1754
+159 10004 ZCTA5 10004 B25008_003     1859  322
+160 10026 ZCTA5 10026 B25008_003    31170 1539
+161 10128 ZCTA5 10128 B25008_003    37804 1870
+162 10282 ZCTA5 10282 B25008_003     5059  492
+163 11214 ZCTA5 11214 B25008_003    58375 2092
+164 11224 ZCTA5 11224 B25008_003    32235 1823
+165 11360 ZCTA5 11360 B25008_003     4975  744
+166 11362 ZCTA5 11362 B25008_003     3758  790
+167 11368 ZCTA5 11368 B25008_003    89751 3266
+168 11374 ZCTA5 11374 B25008_003    25716 1600
+169 11693 ZCTA5 11693 B25008_003     6215  908
+170 11697 ZCTA5 11697 B25008_003      117  138
+171 11423 ZCTA5 11423 B25008_003    10244 1124
+172 11427 ZCTA5 11427 B25008_003     7909  980
+173 11428 ZCTA5 11428 B25008_003     4602  676
+174 11433 ZCTA5 11433 B25008_003    18185 1472
+175 11434 ZCTA5 11434 B25008_003    26156 1954
+176 11236 ZCTA5 11236 B25008_003    46129 2216
+177 11238 ZCTA5 11238 B25008_003    35013 1493
+178 10460 ZCTA5 10460 B25008_003    49957 1885
+179 11377 ZCTA5 11377 B25008_003    58417 2484
+180 11385 ZCTA5 11385 B25008_003    72797 2552
+181 11412 ZCTA5 11412 B25008_003     7610  738
+182 11419 ZCTA5 11419 B25008_003    17073 1522
+183 10001 ZCTA5 10001 B25008_003    16783 1390
+184 10465 ZCTA5 10465 B25008_003    16457 1192
+185 11235 ZCTA5 11235 B25008_003    45606 2079
+186 10462 ZCTA5 10462 B25008_003    56269 1939
+187 10305 ZCTA5 10305 B25008_003    12311 1322
+188 11210 ZCTA5 11210 B25008_003    32441 1619
+189 10034 ZCTA5 10034 B25008_003    39244 1879
+190 11364 ZCTA5 11364 B25008_003    10263 1314
+191 11420 ZCTA5 11420 B25008_003    13778 1433
+192 11356 ZCTA5 11356 B25008_003    12463 1332
+193 11432 ZCTA5 11432 B25008_003    35994 1687
+194 11232 ZCTA5 11232 B25008_003    18233 1027
+195 10028 ZCTA5 10028 B25008_003    28778 1896
+196 11206 ZCTA5 11206 B25008_003    76646 2297
+197 11228 ZCTA5 11228 B25008_003    18263 1444
+198 11105 ZCTA5 11105 B25008_003    25482 1194
+199 11222 ZCTA5 11222 B25008_003    28279  964
+200 11371 ZCTA5 11371 B25008_003        0   12
+201 11212 ZCTA5 11212 B25008_003    56255 2632
+202 11237 ZCTA5 11237 B25008_003    42424 2000
+203 10452 ZCTA5 10452 B25008_003    72028 1858
+204 11414 ZCTA5 11414 B25008_003     7675 1194
+205 10014 ZCTA5 10014 B25008_003    18851 1047
+206 10310 ZCTA5 10310 B25008_003     9095 1004
+207 10464 ZCTA5 10464 B25008_003     1776  610
+208 11694 ZCTA5 11694 B25008_003     8015  902
+209 11357 ZCTA5 11357 B25008_003     8901 1341</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="things-to-do" class="level1">
+<h1>Things to do</h1>
+<section id="briefly-describe-the-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="briefly-describe-the-dataset">1. Briefly Describe the Dataset</h2>
+<ul>
+<li>Summarize the <code>nycomplaints</code> tibble in a way you think is informative to you.</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Organize by the most common complaint types</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>comp_types <span class="ot">&lt;-</span> nycomplaints <span class="sc">|&gt;</span> </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(complaint_type) <span class="sc">|&gt;</span> </span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">total =</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(total))</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(comp_types, <span class="at">n =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 60 × 2
+   complaint_type            total
+   &lt;chr&gt;                     &lt;int&gt;
+ 1 Housing and Buildings     81381
+ 2 Transportation            43391
+ 3 Finance                   28350
+ 4 General Welfare           23219
+ 5 Immigration               18186
+ 6 Sanitation                16038
+ 7 Public Safety             13755
+ 8 Parks                     13504
+ 9 Governmental Operations   11522
+10 Legal Services             9958
+11 Environment                9915
+12 Utilities                  8807
+13 Education                  8299
+14 &lt;NA&gt;                       7431
+15 Quality of Life            7309
+16 Health                     7237
+17 COVID-19                   6012
+18 Economy/Jobs               4889
+19 Aging                      4593
+20 Consumer Affairs           4346
+21 Cultural Affairs           4034
+22 Land Use and Zoning        3119
+23 Civil Service and Labor    1969
+24 Youth Services              782
+25 Recovery and Resiliency     681
+26 Human and Civil Rights      623
+27 @getxlate.Udf_Code_Genera   617
+28 Consumer Complaints         363
+29 Please choose an issue...   282
+30 Veterans Affairs            275
+31 CRIMINAL JUSTICE             84
+32 FIRE AND EMERGENCY MANAGE    76
+33 JUSTICE SYSTEM               43
+34 MENTAL HEALTH-DISABILITY-    39
+35 HOSPITALS                    27
+36 CONTRACTS                    22
+37 SMALL BUSINESS               22
+38 CIVIL AND HUMAN RIGHTS       19
+39 OVERSIGHT AND INVESTIGATI    17
+40 DOCUMENTATION                12
+41 FOR-HIRE-VEHICLES             9
+42 SPAM MAIL                     8
+43 JURY DUTY                     5
+44 Select One                    5
+45 NYPD - NEW YORK POLICE DE     3
+46 HOUSING AND BUILDINGS         2
+47 MEETING                       2
+48 O AND I REQ                   2
+49 PENSION FORMS                 2
+50 SCRIE                         2
+51 WOMEN _ GENDER EQUITY         2
+52 DISPLACEMENT                  1
+53 DWI                           1
+54 EVNT                          1
+55 Government                    1
+56 INT REQ                       1
+57 Land Use                      1
+58 NYCHA                         1
+59 PATRIOTISM                    1
+60 QUALITY OF LIFE               1</code></pre>
+</div>
+</div>
+<p>I’ve summarized by the number of each complaint type. This is informative because we can see what people typically care enough about that they would submit a complaint.</p>
+</section>
+<section id="look-at-each-columnvariable-in-a-little-more-detail" class="level2">
+<h2 class="anchored" data-anchor-id="look-at-each-columnvariable-in-a-little-more-detail">2 Look at each column/variable in a little more detail</h2>
+<ul>
+<li>Explore the basic structure of the data, by e.g.&nbsp;writing code to summarize the variables or investigate aspects of them that seem interesting. You can also create some initial rough exploratory plots if you like, in addition to tables or other summaries. As you go, explain here what it is you are doing and why.</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>borough_df <span class="ot">&lt;-</span> nycomplaints <span class="sc">|&gt;</span> </span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(complaint_type, borough) <span class="sc">|&gt;</span> </span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(borough, complaint_type) <span class="sc">|&gt;</span> </span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">total =</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(borough) <span class="sc">|&gt;</span> </span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(total, <span class="at">n =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'complaint_type'. You can override using
+the `.groups` argument.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(borough_df, <span class="at">n =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 25 × 3
+# Groups:   borough [5]
+   complaint_type        borough       total
+   &lt;chr&gt;                 &lt;chr&gt;         &lt;int&gt;
+ 1 Housing and Buildings Bronx          8030
+ 2 Finance               Bronx          3361
+ 3 Immigration           Bronx          2673
+ 4 General Welfare       Bronx          2127
+ 5 Transportation        Bronx          1017
+ 6 Housing and Buildings Brooklyn      15144
+ 7 Finance               Brooklyn       9077
+ 8 Transportation        Brooklyn       8293
+ 9 General Welfare       Brooklyn       6783
+10 Immigration           Brooklyn       6695
+11 Housing and Buildings Manhattan     36063
+12 General Welfare       Manhattan      6392
+13 Transportation        Manhattan      6260
+14 Finance               Manhattan      3779
+15 Quality of Life       Manhattan      2825
+16 Transportation        Queens         8940
+17 Housing and Buildings Queens         8524
+18 Finance               Queens         3875
+19 General Welfare       Queens         3100
+20 Public Safety         Queens         3040
+21 Transportation        Staten Island 11734
+22 Sanitation            Staten Island  5513
+23 Finance               Staten Island  4715
+24 Environment           Staten Island  2234
+25 Housing and Buildings Staten Island  2171</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data =</span> borough_df,</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>            <span class="fu">aes</span>(<span class="at">x =</span> total,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                <span class="at">y =</span> <span class="fu">reorder</span>(<span class="fu">as.factor</span>(complaint_type), total),</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">fill =</span> complaint_type)) <span class="sc">+</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>borough,</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>             <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill =</span> <span class="st">"none"</span>)</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>p          </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Checking the top complaints by borough to see if the distribution of complaints varies. We can see that the boroughs vary substantially, even in the most common complaint types. Despite transportation being the overall 2nd most complained about issue, the Bronx and Manhattan see very few complaints in this category. Immigration is a common complaint in Brooklyn and the Bronx, but not in any other borough. Further, sanitation is only a common complaint in Staten island.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>housing <span class="ot">&lt;-</span> nycomplaints <span class="sc">|&gt;</span> </span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(complaint_type <span class="sc">==</span> <span class="st">"Housing and Buildings"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(descriptor) <span class="sc">|&gt;</span> </span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">total =</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span> </span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(<span class="fu">desc</span>(total))</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(housing, <span class="at">n =</span> <span class="dv">20</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 174 × 2
+   descriptor                              total
+   &lt;chr&gt;                                   &lt;int&gt;
+ 1 Seeking an affordable housing/apartment  8510
+ 2 Lease Issue                              5713
+ 3 Landlord/Managing Agent Issues           5510
+ 4 NYCHA Building Maintenance               5193
+ 5 NYCHA Misc.                              4367
+ 6 Section 8                                3479
+ 7 Eviction                                 3456
+ 8 Building Maintenance                     3271
+ 9 NYCHA New Application                    2896
+10 &lt;NA&gt;                                     2655
+11 HPD Housing Lottery                      2420
+12 Construction General                     2381
+13 Heat/Hot Water                           2306
+14 Senior Housing                           1950
+15 Repair Assistance                        1804
+16 NYCHA Transfers                          1701
+17 Maintenance                              1615
+18 Rent Increases                           1282
+19 Rental Arrears                           1235
+20 Violation                                1073
+# ℹ 154 more rows</code></pre>
+</div>
+</div>
+<p>Here, I explore the complaints within the Housing and Buildings category, the most common complaint type. We can see the top 3 complaint types are about unaffordable housing, leasing issues, and landlord/management agent issues.</p>
+</section>
+<section id="make-some-plots-or-maps" class="level2">
+<h2 class="anchored" data-anchor-id="make-some-plots-or-maps">3. Make some plots or maps</h2>
+<ul>
+<li>Following on from the tabular summarize, make some plots that you think show something interesting about the data. Make sure they look presentable and effective to you. Make a note about why you’re doing each one. If you like, merge in data from elsewhere (e.g.&nbsp;from Census variables).</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>housing_complaint_time <span class="ot">&lt;-</span> nycomplaints <span class="sc">|&gt;</span> </span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(complaint_type <span class="sc">==</span> <span class="st">"Housing and Buildings"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">descriptor =</span> <span class="fu">tolower</span>(descriptor),</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">descriptor =</span> <span class="fu">str_squish</span>(descriptor)) <span class="sc">|&gt;</span> </span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(descriptor) <span class="sc">|&gt;</span> </span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">drop_na</span>(descriptor, opendate, closedate) <span class="sc">|&gt;</span> </span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">as.Date</span>(opendate, <span class="at">format =</span> <span class="st">"%Y-%m-%d"</span>),</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>         <span class="fu">as.Date</span>(closedate, <span class="at">format =</span> <span class="st">"%Y-%m-%d"</span>),</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">ttc =</span> <span class="fu">difftime</span>(closedate, opendate, <span class="at">units =</span> <span class="st">"days"</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">mean_ttc =</span> <span class="fu">mean</span>(ttc)) <span class="sc">|&gt;</span> </span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(mean_ttc, <span class="at">n =</span> <span class="dv">20</span>)</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(<span class="at">data =</span> housing_complaint_time,</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>             <span class="fu">aes</span>(<span class="at">x =</span> mean_ttc,</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>                 <span class="at">y =</span> descriptor)) <span class="sc">+</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Longest Case Completion Times by Complaint, NYC"</span>,</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"Housing &amp; Building Related Cases"</span>,</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Time to Close Complaint Case"</span>,</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Complaint Description"</span>,</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>       <span class="at">caption =</span> <span class="st">"Source: City of New York"</span>)</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>p2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Don't know how to automatically pick scale for object of type &lt;difftime&gt;.
+Defaulting to continuous.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here I dig a bit further into the Housing and Building type complaints, and look to see which types of cases are resolved slowly. The above plot displays the top 20 longest case types to be closed and shows that zoning complaints take significantly longer than other complaint types.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Rename &amp; clean for merging</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>nycomplaints_zip <span class="ot">&lt;-</span> nycomplaints <span class="sc">|&gt;</span> </span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(zip <span class="sc">%in%</span> nyc_zips<span class="sc">$</span>zip) <span class="sc">|&gt;</span> </span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">GEOID =</span> zip) <span class="sc">|&gt;</span> </span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">descriptor =</span> <span class="fu">tolower</span>(descriptor),</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">descriptor =</span> <span class="fu">str_squish</span>(descriptor)) <span class="sc">|&gt;</span> </span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(descriptor <span class="sc">==</span> <span class="st">"eviction"</span> <span class="sc">|</span> descriptor <span class="sc">==</span> <span class="st">"evictions"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>zip_data_only <span class="ot">&lt;-</span> zip_data <span class="sc">|&gt;</span> </span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(nycomplaints_zip, <span class="at">by =</span> <span class="st">"GEOID"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(GEOID, geometry) <span class="sc">|&gt;</span> </span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(GEOID) <span class="sc">|&gt;</span> </span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">total =</span> <span class="fu">n</span>())</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>zip_data_only <span class="sc">|&gt;</span> </span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">fill =</span> total)) <span class="sc">+</span> </span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">color =</span> <span class="cn">NA</span>) <span class="sc">+</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">"turbo"</span>) <span class="sc">+</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Total Number of Eviction Complaints by Zip Code"</span>,</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="st">"New York City, 2019"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="try-to-make-one-properly-polished-plot-or-map" class="level2">
+<h2 class="anchored" data-anchor-id="try-to-make-one-properly-polished-plot-or-map">4. Try to make one properly-polished plot or map</h2>
+<ul>
+<li><ol type="a">
+<li><em>Either</em> choose one of the plots you’ve already made <em>or</em> create a new plot or map using the data. Work it up to something more finished. Aim for something that is both properly informative and as polished as you can make it.</li>
+</ol></li>
+</ul>
+<ul>
+<li><ol start="2" type="a">
+<li>Try saving this plot or map using <code>ggsave()</code>. Create it as a PNG or PDF file. Make its dimensions (width and height) the right size for what you draw.</li>
+</ol></li>
+</ul>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
