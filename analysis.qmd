@@ -41,13 +41,11 @@ Read the documentation before working with the data.
 nycomplaints
 ```
 
-
 ## Two useful tables
 
 ```{r}
 nyc_zips
 ```
-
 
 ```{r}
 census_vars
@@ -70,8 +68,6 @@ Hints:
 
 Additionally, this may be a good time to think about dividing your project up in to more than one file. For example, you could have one R script that does the work above to produce an object you could save, or that you source into this file. (See `?source`.)
 
-
-
 ## Additional variables
 
 The ACS has a lot of data. Consider the *very* long list of variables here:
@@ -81,6 +77,17 @@ The ACS has a lot of data. Consider the *very* long list of variables here:
 acs_vars <- load_variables(year = 2019, dataset = "acs5")
 ```
 
+```{r}
+zip_data <- get_acs(geography = "zcta", 
+                         variables = "B28011_002",
+                         state = "NY",
+                         year = 2019,
+                         geometry = TRUE)
+
+# Keep zip codes in NYC only
+zip_data <- zip_data |> 
+  filter(GEOID %in% nyc_zips$zip)
+```
 
 ## Other information
 
@@ -98,6 +105,15 @@ zip_data |>
 ## 1. Briefly Describe the Dataset
 
 - Summarize the `nycomplaints` tibble in a way you think is informative to you.
+
+```{r}
+# Organize by the most common complaint types
+comp_types <- nycomplaints |> 
+  group_by(complaint_type) |> 
+  summarize(N = n())
+print(comp_types)
+```
+
 
 ## 2 Look at each column/variable in a little more detail
 
